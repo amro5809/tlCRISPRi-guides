@@ -138,13 +138,19 @@ def main() -> None:
     rows = []
     with csv_path.open(newline="") as fh:
         reader = csv.DictReader(fh)
+        input_fieldnames = reader.fieldnames or []
+        required = {"Gene", "Locus tag"}
+        missing_cols = required - set(input_fieldnames)
+        if missing_cols:
+            sys.exit(f"ERROR: Input CSV is missing required columns: {', '.join(sorted(missing_cols))}")
+
         for row in reader:
             rows.append(row)
 
     if not rows:
         sys.exit("ERROR: Input CSV contains no data rows.")
 
-    fieldnames = list(rows[0].keys()) + ["RBS", "CDS", "RBS spacer", "CDS spacer"]
+    fieldnames = input_fieldnames + ["RBS", "CDS", "RBS spacer", "CDS spacer"]
 
     out_path = Path(args.output)
     out_path.parent.mkdir(parents=True, exist_ok=True)
