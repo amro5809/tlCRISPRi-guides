@@ -72,7 +72,7 @@ def design_guides_for_feature(feature, record_seq: str, locus_tag: str) -> dict:
         rbs_start = max(0, start - RBS_UPSTREAM)
         rbs_seq = record_seq[rbs_start:start]
         cds_seq = record_seq[start : start + CDS_DOWNSTREAM]
-    else:
+    elif strand == -1:
         # Reverse strand — complement & reverse; upstream means higher indices
         rbs_end = min(len(record_seq), end + RBS_UPSTREAM)
         rbs_raw = record_seq[end:rbs_end]
@@ -80,7 +80,8 @@ def design_guides_for_feature(feature, record_seq: str, locus_tag: str) -> dict:
         # Reverse-complement so the guide is designed on the coding strand
         rbs_seq = str(Seq(rbs_raw).reverse_complement())
         cds_seq = str(Seq(cds_raw).reverse_complement())
-
+    else:
+        sys.exit(f"ERROR: CDS feature for {locus_tag} has unknown strand: {strand!r}")
     rbs_spacer = find_pam_spacer(rbs_seq, f"{locus_tag} RBS")
     cds_spacer = find_pam_spacer(cds_seq, f"{locus_tag} CDS")
 
