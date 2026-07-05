@@ -73,7 +73,7 @@ echo "  Output    : ${OUTPUT}"
 echo "======================================================"
 echo ""
 
-if python "${SCRIPT}" "${CSV_FILE}" "${GENBANK_PATH}" -o "${OUTPUT}"; then
+if python3 "${SCRIPT}" "${CSV_FILE}" "${GENBANK_PATH}" -o "${OUTPUT}"; then
     echo ""
     echo "======================================================"
     echo "  SUCCESS — guides written to:"
