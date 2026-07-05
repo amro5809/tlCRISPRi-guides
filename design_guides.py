@@ -110,6 +110,11 @@ def load_genbank(gbk_path: str) -> dict:
             tags = feature.qualifiers.get("locus_tag", [])
             for tag in tags:
                 tag_map[tag] = (feature, seq_str)
+    if not tag_map:
+        sys.exit(
+            "ERROR: No CDS features with locus_tag were found. "
+            "Is this an annotated GenBank (.gbk/.gbff) file?"
+        )
     return tag_map
 
 
