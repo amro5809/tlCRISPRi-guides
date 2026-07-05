@@ -54,7 +54,10 @@ def find_pam_spacer(sequence: str, label: str) -> str:
         pam_start = spacer_end + 1              # skip the 'N' in NGG
         if seq[pam_start : pam_start + 2] == PAM:
             return seq[i:spacer_end]
-    print(f"  WARNING: no NGG PAM found in {label} window; leaving spacer blank.")
+    print(
+        f"  WARNING: no NGG PAM found in {label} window; leaving spacer blank.",
+        file=sys.stderr,
+    )
     return ""
 
 
