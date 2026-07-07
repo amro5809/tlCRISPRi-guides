@@ -54,7 +54,10 @@ def find_pam_spacer(sequence: str, label: str) -> str:
         pam_start = spacer_end + 1              # skip the 'N' in NGG
         if seq[pam_start : pam_start + 2] == PAM:
             return seq[i:spacer_end]
-    print(f"  WARNING: no NGG PAM found in {label} window; leaving spacer blank.")
+    print(
+        f"  WARNING: no NGG PAM found in {label} window; leaving spacer blank.",
+        file=sys.stderr,
+    )
     return ""
 
 
@@ -72,7 +75,7 @@ def design_guides_for_feature(feature, record_seq: str, locus_tag: str) -> dict:
         rbs_start = max(0, start - RBS_UPSTREAM)
         rbs_seq = record_seq[rbs_start:start]
         cds_seq = record_seq[start : start + CDS_DOWNSTREAM]
-    else:
+    elif strand == -1:
         # Reverse strand — complement & reverse; upstream means higher indices
         rbs_end = min(len(record_seq), end + RBS_UPSTREAM)
         rbs_raw = record_seq[end:rbs_end]
@@ -80,7 +83,8 @@ def design_guides_for_feature(feature, record_seq: str, locus_tag: str) -> dict:
         # Reverse-complement so the guide is designed on the coding strand
         rbs_seq = str(Seq(rbs_raw).reverse_complement())
         cds_seq = str(Seq(cds_raw).reverse_complement())
-
+    else:
+        sys.exit(f"ERROR: CDS feature for {locus_tag} has unknown strand: {strand!r}")
     rbs_spacer = find_pam_spacer(rbs_seq, f"{locus_tag} RBS")
     cds_spacer = find_pam_spacer(cds_seq, f"{locus_tag} CDS")
 
@@ -109,6 +113,11 @@ def load_genbank(gbk_path: str) -> dict:
             tags = feature.qualifiers.get("locus_tag", [])
             for tag in tags:
                 tag_map[tag] = (feature, seq_str)
+    if not tag_map:
+        sys.exit(
+            "ERROR: No CDS features with locus_tag were found. "
+            "Is this an annotated GenBank (.gbk/.gbff) file?"
+        )
     return tag_map
 
 
@@ -137,13 +146,19 @@ def main() -> None:
     rows = []
     with csv_path.open(newline="") as fh:
         reader = csv.DictReader(fh)
+        input_fieldnames = reader.fieldnames or []
+        required = {"Gene", "Locus tag"}
+        missing_cols = required - set(input_fieldnames)
+        if missing_cols:
+            sys.exit(f"ERROR: Input CSV is missing required columns: {', '.join(sorted(missing_cols))}")
+
         for row in reader:
             rows.append(row)
 
     if not rows:
         sys.exit("ERROR: Input CSV contains no data rows.")
 
-    fieldnames = list(rows[0].keys()) + ["RBS", "CDS", "RBS spacer", "CDS spacer"]
+    fieldnames = input_fieldnames + ["RBS", "CDS", "RBS spacer", "CDS spacer"]
 
     out_path = Path(args.output)
     out_path.parent.mkdir(parents=True, exist_ok=True)
